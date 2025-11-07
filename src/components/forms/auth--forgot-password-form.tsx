@@ -1,0 +1,125 @@
+"use client";
+
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
+
+import {
+  AuthCard,
+  AuthHeader,
+  AuthContent,
+  AuthSeparator,
+  CheckEmailIllustration,
+  DefaultAuthFooter,
+} from "@/components/forms/auth--form-ui";
+
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/components/ui/form";
+
+const forgotSchema = z.object({
+  email: z.string().min(1, "Email is required").email("Invalid email address"),
+});
+
+type ForgotValues = z.infer<typeof forgotSchema>;
+
+export default function ForgotPasswordForm() {
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const form = useForm<ForgotValues>({
+    resolver: zodResolver(forgotSchema),
+    defaultValues: { email: "" },
+  });
+
+  function onSubmit(values: ForgotValues) {
+    // TODO: wire to your password-reset API
+    console.log("request password reset for", values.email);
+    setSentTo(values.email);
+  }
+
+  function handleChangeEmail() {
+    setSentTo(null);
+    form.reset();
+  }
+
+  return (
+    <AuthCard>
+      <AuthHeader title="Reset your password" />
+
+      <AuthContent>
+        {!sentTo ? (
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="email"
+                render={({ field }) => (
+                  <FormItem>
+                    <Label>Email</Label>
+                    <FormControl>
+                      <Input placeholder="name@example.com" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex items-center justify-between">
+                <div />
+                <Button type="submit">Send reset link</Button>
+              </div>
+
+              <AuthSeparator />
+
+              <div className="pt-4 text-center text-sm text-muted-foreground">
+                <span>Remembered it? </span>
+                <Link href="/login" className="underline-offset-4 underline">
+                  Sign in
+                </Link>
+              </div>
+            </form>
+          </Form>
+        ) : (
+          <div className="space-y-4 text-center">
+            <CheckEmailIllustration />
+
+            <h3 className="text-lg font-medium">Check your email</h3>
+
+            <p className="text-sm text-muted-foreground">
+              If an account exists for{" "}
+              <span className="font-medium">{sentTo}</span>, we've sent a
+              password reset link. It may take a few minutes to arrive. Please
+              check your inbox and spam folder.
+            </p>
+
+            <div className="flex flex-col gap-2">
+              <Button onClick={() => console.log("resend to", sentTo)}>
+                Resend email
+              </Button>
+              <Button variant={"secondary"} onClick={handleChangeEmail}>
+                Change email
+              </Button>
+            </div>
+
+            <div className="pt-2 text-sm text-muted-foreground">
+              <span>Still no email? </span>
+              <Link href="/support" className="underline-offset-4 underline">
+                Contact support
+              </Link>
+            </div>
+          </div>
+        )}
+      </AuthContent>
+
+      <DefaultAuthFooter />
+    </AuthCard>
+  );
+}
