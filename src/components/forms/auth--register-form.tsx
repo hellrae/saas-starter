@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 
@@ -17,7 +17,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
   Form,
   FormControl,
@@ -25,41 +24,44 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-
-// TODO: replace with your own register schema/validation
-const registerSchema = z
-  .object({
-    name: z.string().min(1, "Name is required"),
-    email: z
-      .string()
-      .min(1, "Email is required")
-      .email("Invalid email address"),
-    password: z.string().min(6, "Password must be at least 6 characters"),
-    confirmPassword: z.string().min(1, "Please confirm your password"),
-    acceptTerms: z.boolean().optional(),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    path: ["confirmPassword"],
-    message: "Passwords do not match",
-  });
-
-type RegisterValues = z.infer<typeof registerSchema>;
+import { useState } from "react";
+import { signupFormSchema } from "@/types/auth-type";
+import { trpc } from "@/lib/trpc/client";
+import { toast } from "sonner";
 
 export default function RegisterForm() {
-  const form = useForm<RegisterValues>({
-    resolver: zodResolver(registerSchema),
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<z.infer<typeof signupFormSchema>>({
+    resolver: zodResolver(signupFormSchema),
     defaultValues: {
       name: "",
       email: "",
       password: "",
-      confirmPassword: "",
-      acceptTerms: false,
     },
   });
 
-  function onSubmit(values: RegisterValues) {
-    // TODO: replace with your register logic
-    console.log("register values", values);
+  const signUpMutation = trpc.auth.signUp.useMutation({
+    onMutate: () => {
+      setIsSubmitting(true);
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
+    },
+    onSuccess: () => {
+      toast.success("Account created successfully!");
+      window.location.href = "/account";
+    },
+    // TODO: fix error handling based on better-auth errors
+    onError: (error) => {
+      console.log(error);
+      toast.error(error.message || "Failed to sign up. Please try again.");
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof signupFormSchema>) {
+    // Extra UX: check if terms are accepted
+    signUpMutation.mutate(values);
   }
 
   return (
@@ -76,7 +78,11 @@ export default function RegisterForm() {
                 <FormItem>
                   <Label>Name</Label>
                   <FormControl>
-                    <Input placeholder="Your full name" {...field} />
+                    <Input
+                      placeholder="Your full name"
+                      {...field}
+                      disabled={isSubmitting}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -90,7 +96,11 @@ export default function RegisterForm() {
                 <FormItem>
                   <Label>Email</Label>
                   <FormControl>
-                    <Input placeholder="name@example.com" {...field} />
+                    <Input
+                      placeholder="name@example.com"
+                      {...field}
+                      disabled={isSubmitting}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -107,48 +117,10 @@ export default function RegisterForm() {
                     <Input
                       type="password"
                       placeholder="Create a password"
+                      disabled={isSubmitting}
                       {...field}
                     />
                   </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="confirmPassword"
-              render={({ field }) => (
-                <FormItem>
-                  <Label>Confirm Password</Label>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Repeat password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="acceptTerms"
-              render={({ field }) => (
-                <FormItem className="flex items-start">
-                  <FormControl>
-                    <Checkbox
-                      checked={field.value}
-                      onCheckedChange={(v) => field.onChange(Boolean(v))}
-                    />
-                  </FormControl>
-                  <div className="ml-3 text-sm">
-                    <Label className="mb-0!">
-                      I agree to the terms and conditions
-                    </Label>
-                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -156,7 +128,9 @@ export default function RegisterForm() {
 
             <div className="flex items-center justify-between">
               <div />
-              <Button type="submit">Create account</Button>
+              <Button type="submit" className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? "Registering..." : "Register"}
+              </Button>
             </div>
 
             <AuthSeparator />
@@ -166,7 +140,7 @@ export default function RegisterForm() {
             <div className="pt-4 text-center text-sm text-muted-foreground">
               <span>Already have an account? </span>
               <Link href="/login" className="underline-offset-4 underline">
-                Sign in
+                Login
               </Link>
             </div>
           </form>

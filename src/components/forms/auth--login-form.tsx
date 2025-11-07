@@ -1,7 +1,7 @@
 "use client";
 
 import { useForm } from "react-hook-form";
-import { z } from "zod";
+import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
 
@@ -24,24 +24,47 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
-
-// TODO: replace with your own register schema/validation
-const loginSchema = z.object({
-  email: z.string().min(1, "Email is required").email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-type LoginValues = z.infer<typeof loginSchema>;
+import { trpc } from "@/lib/trpc/client";
+import { useState } from "react";
+import { signInFormSchema } from "@/types/auth-type";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 export default function LoginForm() {
-  const form = useForm<LoginValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "" },
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const form = useForm<z.infer<typeof signInFormSchema>>({
+    resolver: zodResolver(signInFormSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
   });
 
-  function onSubmit(values: LoginValues) {
-    // TODO: replace with your auth logic
-    console.log("login values", values);
+  const signInMutation = trpc.auth.signIn.useMutation({
+    onMutate: () => {
+      setIsSubmitting(true);
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
+    },
+    onSuccess: () => {
+      toast.success("Welcome back 👋");
+      window.location.href = "/account";
+    },
+    // TODO: fix error handling based on better-auth errors
+    onError: (error) => {
+      console.error(error);
+      if (error.message.includes("invalid credentials")) {
+        toast.error("Invalid email or password. Try again.");
+      } else {
+        toast.error(error.message || "Failed to sign in. Please try again.");
+      }
+    },
+  });
+
+  function onSubmit(values: z.infer<typeof signInFormSchema>) {
+    signInMutation.mutate(values);
   }
 
   return (
@@ -58,7 +81,11 @@ export default function LoginForm() {
                 <FormItem>
                   <Label>Email</Label>
                   <FormControl>
-                    <Input placeholder="name@example.com" {...field} />
+                    <Input
+                      placeholder="name@example.com"
+                      {...field}
+                      disabled={isSubmitting}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -75,6 +102,7 @@ export default function LoginForm() {
                     <Input
                       type="password"
                       placeholder="Your password"
+                      disabled={isSubmitting}
                       {...field}
                     />
                   </FormControl>
@@ -93,7 +121,16 @@ export default function LoginForm() {
                 </Link>
               </div>
 
-              <Button type="submit">Sign in</Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing
+                    In...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
+              </Button>
             </div>
 
             <AuthSeparator />
