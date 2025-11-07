@@ -2,7 +2,7 @@
 
 const page = () => {
   return <>reset password form</>;
-//   return <ResetPasswordForm />;
+  //   return <ResetPasswordForm />;
 };
 
 export default page;
