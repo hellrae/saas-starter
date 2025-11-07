@@ -25,6 +25,9 @@ import {
   FormItem,
   FormMessage,
 } from "@/components/ui/form";
+import { trpc } from "@/lib/trpc/client";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 const forgotSchema = z.object({
   email: z.string().min(1, "Email is required").email("Invalid email address"),
@@ -39,10 +42,30 @@ export default function ForgotPasswordForm() {
     defaultValues: { email: "" },
   });
 
+  const mutation = trpc.auth.requestPasswordReset.useMutation({
+    onSuccess: (_, variables) => {
+      toast.success(`Password reset link sent to: ${variables}`, {
+        duration: 5000,
+        style: {
+          whiteSpace: "pre-wrap",
+          wordBreak: "break-word",
+          maxWidth: "400px",
+        },
+      });
+      form.reset();
+    },
+    onError: (error) => {
+      console.error(error);
+      if (error.message.includes("invalid credentials")) {
+        toast.error("Invalid email. Try again.");
+      } else {
+        toast.error(error.message || "Failed to request password reset.");
+      }
+    },
+  });
+
   function onSubmit(values: ForgotValues) {
-    // TODO: wire to your password-reset API
-    console.log("request password reset for", values.email);
-    setSentTo(values.email);
+    mutation.mutate(values.email);
   }
 
   function handleChangeEmail() {
@@ -65,17 +88,30 @@ export default function ForgotPasswordForm() {
                   <FormItem>
                     <Label>Email</Label>
                     <FormControl>
-                      <Input placeholder="name@example.com" {...field} />
+                      <Input
+                        placeholder="name@example.com"
+                        disabled={mutation.isPending}
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <div className="flex items-center justify-between">
-                <div />
-                <Button type="submit">Send reset link</Button>
-              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={mutation.isPending}
+              >
+                {mutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
+                  </>
+                ) : (
+                  "Send reset link"
+                )}
+              </Button>
 
               <AuthSeparator />
 

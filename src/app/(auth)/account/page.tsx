@@ -1,11 +1,11 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import ManageAccountForm from "@/components/forms/auth--account-form";
+import ManageAccountForm from "@/components/forms/auth-account--main-form";
 
 const page = async () => {
   const session = await auth.api.getSession({ headers: await headers() });
-  if (!session) redirect("/sign-in");
+  if (!session) redirect("/login");
   return <ManageAccountForm user={session.user} />;
 };
 
