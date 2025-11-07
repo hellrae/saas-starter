@@ -27,6 +27,8 @@ import {
 } from "@/components/forms/auth--form-ui";
 
 import { toast } from "sonner";
+import type { User } from "better-auth";
+import AccountLogout from "../auth--logout";
 
 const ManageAccountSchema = z
   .object({
@@ -64,12 +66,6 @@ const ManageAccountSchema = z
 
 type ManageAccountValues = z.infer<typeof ManageAccountSchema>;
 
-/**
- * Typesafe payload type:
- * name + email are required; oldPassword/newPassword are optional,
- * but we keep them optional in the payload typing because the zod
- * schema already enforces rules about when they must be present.
- */
 type UpdateAccountPayload = {
   name: string;
   email: string;
@@ -77,15 +73,15 @@ type UpdateAccountPayload = {
   newPassword?: string;
 };
 
-export default function ManageAccountForm() {
+export default function ManageAccountForm({ user }: { user: User }) {
   const [showOld, setShowOld] = useState(false);
   const [showNew, setShowNew] = useState(false);
 
   const form = useForm<ManageAccountValues>({
     resolver: zodResolver(ManageAccountSchema),
     defaultValues: {
-      name: "",
-      email: "",
+      name: user.name,
+      email: user.email,
       oldPassword: "",
       newPassword: "",
     },
@@ -231,6 +227,9 @@ export default function ManageAccountForm() {
             </CardFooter>
           </form>
         </Form>
+
+        <AuthSeparator className="pt-5 pb-3" />
+        <AccountLogout />
       </AuthContent>
     </AuthCard>
   );

@@ -10,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Github, Twitter, Mail } from "lucide-react";
+import { cn } from "@/lib/utils/cn";
 
 export function AuthCard({ children }: PropsWithChildren) {
   return (
@@ -35,9 +36,9 @@ export function AuthFooter({ children }: { children?: React.ReactNode }) {
   return <CardFooter>{children}</CardFooter>;
 }
 
-export function AuthSeparator() {
+export function AuthSeparator({ className }: { className?: string }) {
   return (
-    <div className="pt-2">
+    <div className={cn("pt-2", className)}>
       <Separator />
     </div>
   );
