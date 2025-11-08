@@ -1,22 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { layoutMetadata, jsonLd } from "@/lib/utils/seo";
 import Provider from "@/components/provider";
+import { geistSans } from "@/lib/fonts";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "Photographer4u",
-  description: "Professional photography services",
-};
+export const metadata: Metadata = layoutMetadata;
 
 export default function RootLayout({
   children,
@@ -25,9 +13,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <head>
+        <script
+          type="application/ld+json"
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: <we are safe>
+          dangerouslySetInnerHTML={jsonLd}
+        />
+      </head>
+      <body className={`${geistSans.className} antialiased`}>
         <Provider>{children}</Provider>
       </body>
     </html>

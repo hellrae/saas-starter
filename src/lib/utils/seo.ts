@@ -1,3 +1,5 @@
+import { Metadata } from "next";
+
 export const appSeo = {
   name: "Your App Name",
   title: "Your App Name – Your Tagline or Event Title",
@@ -45,4 +47,60 @@ export const appSeo = {
     apple: "/apple-touch-icon.png",
   },
   manifest: "/site.webmanifest",
+};
+
+export const layoutMetadata: Metadata = {
+  metadataBase: new URL(appSeo.url),
+  title: {
+    default: appSeo.title,
+    template: `%s | ${appSeo.name}`,
+  },
+  description: appSeo.description,
+  applicationName: appSeo.name,
+  authors: appSeo.authors,
+  keywords: appSeo.keywords,
+  creator: appSeo.creator,
+  publisher: appSeo.name,
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+    },
+  },
+  icons: appSeo.icons,
+  manifest: appSeo.manifest,
+  openGraph: {
+    ...appSeo.openGraph,
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: appSeo.twitter,
+  alternates: {
+    canonical: appSeo.url,
+  },
+};
+
+export const jsonLd = {
+  __html: JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: appSeo.name,
+    url: appSeo.url,
+    description: appSeo.description,
+    publisher: {
+      "@type": "Organization",
+      name: appSeo.name,
+      logo: {
+        "@type": "ImageObject",
+        url: `${appSeo.url}/logo.png`,
+      },
+    },
+    potentialAction: {
+      "@type": "SearchAction",
+      target: `${appSeo.url}/search?q={search_term_string}`,
+      "query-input": "required name=search_term_string",
+    },
+  }),
 };

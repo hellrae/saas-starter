@@ -71,6 +71,9 @@ importers:
       postgres:
         specifier: ^3.4.7
         version: 3.4.7
+      prettier:
+        specifier: ^3.6.2
+        version: 3.6.2
       react:
         specifier: 19.2.0
         version: 19.2.0
