@@ -52,8 +52,8 @@ export default function AccountProfileForm({ user }: { user: User }) {
       toast.success("Profile updated successfully!");
     },
     onError: (err) => {
-      console.error(err);
-      toast.error("Failed to update profile. Please try again.");
+      console.error(err.message);
+      toast.error(err.message ?? "Failed to update profile. Please try again.");
     },
   });
 

@@ -21,16 +21,12 @@ export const userRouter = createTRPCRouter({
       }
 
       // If email present → call changeEmail
-      try {
-        if (input.email) {
-          const res = await auth.api.changeEmail({
-            body: { newEmail: input.email },
-            headers: await headers(),
-          });
-          updated = { ...updated, ...(res ?? {}) };
-        }
-      } catch (error) {
-        console.log(error);
+      if (input.email) {
+        const res = await auth.api.changeEmail({
+          body: { newEmail: input.email },
+          headers: await headers(),
+        });
+        updated = { ...updated, ...(res ?? {}) };
       }
 
       return {

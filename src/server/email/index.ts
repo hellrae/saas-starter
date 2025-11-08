@@ -7,6 +7,8 @@ import { EmailChangeApprovalRequest } from "./templates/verification--email-chan
 import { EmailVerifiedNotification } from "./templates/verification--email-verified-notification";
 import EmailVerification from "./templates/verification--email-verification";
 
+import type { CreateEmailResponse } from "resend";
+
 const resend = new Resend(env.RESEND_API_KEY);
 const DEFAULT_EMAIL_ADDRESS = `${appSeo.name} <no-reply@mail.${env.DOMAIN_NAME}>`;
 
@@ -146,3 +148,27 @@ export const email = {
     },
   },
 };
+
+// ----------------------- HELPERS ----------------------- //
+
+export async function safeSend(
+  fn: () => Promise<CreateEmailResponse>,
+): Promise<CreateEmailResponse> {
+  try {
+    return await fn();
+  } catch (err) {
+    const e = err as { message?: string; statusCode?: number };
+
+    const result: CreateEmailResponse = {
+      data: null,
+      error: {
+        message: e.message ?? "Unknown error from email provider",
+        statusCode: e.statusCode ?? null,
+        name: "internal_server_error",
+      },
+      headers: null,
+    };
+
+    return result;
+  }
+}
