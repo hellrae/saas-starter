@@ -1,5 +1,7 @@
 # Modern SaaS Starter Kit
 
+[![MIT License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 A production-ready starter template for building modern SaaS applications with Next.js and TypeScript. This boilerplate provides a solid foundation with built-in authentication, email workflows, database integration, and a polished UI components system.
 
 ## Tech Stack
