@@ -1,10 +1,10 @@
-import { publicProcedure, createTRPCRouter } from "../init";
+import { createTRPCRouter, authedProcedure } from "../init";
 import { changePasswordFormSchema, userSchema } from "@/types/auth-type";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 
 export const userRouter = createTRPCRouter({
-  updateUser: publicProcedure
+  updateUser: authedProcedure
     .input(userSchema.pick({ name: true, email: true }).partial())
     .mutation(async ({ input }) => {
       let updated: Record<string, unknown> = {};
@@ -39,7 +39,7 @@ export const userRouter = createTRPCRouter({
       };
     }),
 
-  changePassword: publicProcedure
+  changePassword: authedProcedure
     .input(changePasswordFormSchema)
     .mutation(async ({ input: values }) => {
       await auth.api.changePassword({

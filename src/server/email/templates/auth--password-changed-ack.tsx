@@ -37,7 +37,7 @@ const PasswordChangedAck = ({ name }: { name: string }) => {
 
             <Section className="border-t border-gray-200 pt-4">
               <Text className="text-[12px] text-gray-500 m-0">
-                © 2025 ${appSeo.name}. All rights reserved.
+                © 2025 {appSeo.name}. All rights reserved.
               </Text>
             </Section>
           </Container>

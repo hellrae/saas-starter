@@ -24,27 +24,46 @@ export const auth = betterAuth({
   user: {
     changeEmail: {
       enabled: true,
-      sendChangeEmailVerification: async ({ user, url, newEmail }) => {
-        await email.verification.changeEmailVerification({
+      async sendChangeEmailVerification({ user, url, newEmail }) {
+        await email.emailVerification.requestEmailChangeApproval({
           to: user.email,
           name: user.name,
-          oldEmail: user.email,
-          newEmail,
-          verificationUrl: url,
+          requestedEmail: newEmail,
+          approvalUrl: url,
         });
       },
     },
   },
+  emailVerification: {
+    async afterEmailVerification(user) {
+      await email.emailVerification.sendEmailVerifiedNotification({
+        name: user.name,
+        to: user.email,
+        newEmail: user.email,
+      });
+    },
+    async sendVerificationEmail({ user, url }) {
+      await email.emailVerification.sendVerificationToEmail({
+        name: user.name,
+        to: user.email,
+        newEmail: user.email,
+        verificationUrl: url,
+      });
+    },
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    expiresIn: 43200, // 12 hour
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: false,
-    onPasswordReset: async ({ user }) => {
+    async onPasswordReset({ user }) {
       await email.password.passwordChangedAck({
         to: user.email,
         name: user.name,
       });
     },
-    sendResetPassword: async ({ user, url }) => {
+    async sendResetPassword({ user, url }) {
       await email.password.passwordResetRequest({
         to: user.email,
         name: user.name,

@@ -19,6 +19,7 @@ import {
 import { toast } from "sonner";
 import type { User } from "better-auth";
 import { trpc } from "@/lib/trpc/client";
+import { Badge } from "@/components/ui/badge";
 
 const ManageAccountSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -96,7 +97,16 @@ export default function AccountProfileForm({ user }: { user: User }) {
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <div className="flex items-center justify-between">
+                <FormLabel>Email</FormLabel>
+                {user.emailVerified ? (
+                  <Badge className="text-xs px-2 py-0.5">Verified</Badge>
+                ) : (
+                  <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                    Not Verified
+                  </Badge>
+                )}
+              </div>
               <FormControl>
                 <Input placeholder="you@company.com" {...field} />
               </FormControl>
