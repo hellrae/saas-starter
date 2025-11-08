@@ -137,8 +137,21 @@ export default function ForgotPasswordForm() {
             </p>
 
             <div className="flex flex-col gap-2">
-              <Button onClick={() => console.log("resend to", sentTo)}>
-                Resend email
+              <Button
+                type="submit"
+                className="w-full"
+                onClick={() => {
+                  if (sentTo) mutation.mutate(sentTo);
+                }}
+                disabled={mutation.isPending}
+              >
+                {mutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
+                  </>
+                ) : (
+                  "Resend email"
+                )}
               </Button>
               <Button variant={"secondary"} onClick={handleChangeEmail}>
                 Change email

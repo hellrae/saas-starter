@@ -8,13 +8,16 @@ export const userSchema = z.object({
     .regex(/^\p{L}+$/u, { message: "Name must contain only letters." }),
 
   email: z.string().regex(/^[A-Za-z0-9._+\-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/, {
-    message: "Invalid email address.",
+    message: "Please enter a valid email address.",
   }),
   emailVerified: z.boolean(),
   image: z
     .string()
     .or(z.literal("").transform(() => undefined))
     .optional(),
+
+  isPhotographer: z.boolean().default(false),
+  isDeleted: z.boolean().default(false),
 
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),

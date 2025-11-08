@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -29,26 +29,32 @@ const ManageAccountSchema = z.object({
 type ManageAccountValues = z.infer<typeof ManageAccountSchema>;
 
 export default function AccountProfileForm({ user }: { user: User }) {
+  // Stable initial values from the user object
+  const initialValues = useMemo<ManageAccountValues>(
+    () => ({
+      name: user.name ?? "",
+      email: user.email ?? "",
+    }),
+    [user.name, user.email],
+  );
+
   const form = useForm<ManageAccountValues>({
     resolver: zodResolver(ManageAccountSchema),
-    defaultValues: {
-      name: user.name,
-      email: user.email,
-    },
+    defaultValues: initialValues,
     mode: "onBlur",
   });
 
-  // Reset when user changes (in case of hot reload or profile refetch)
+  // If the user changes (hot reload/refetch), reset the form to new defaults
   useEffect(() => {
-    form.reset({
-      name: user.name,
-      email: user.email,
-    });
-  }, [user.name, user.email]);
+    form.reset(initialValues, { keepDirty: false, keepTouched: false });
+  }, [initialValues, form]);
+
+  const { isDirty, isSubmitting, dirtyFields } = form.formState;
 
   const updateUserMutation = trpc.user.updateUser.useMutation({
     onSuccess: () => {
-      form.reset(form.getValues()); // mark form clean
+      // mark form clean by syncing current values as the new baseline
+      form.reset(form.getValues(), { keepDirty: false, keepTouched: true });
       toast.success("Profile updated successfully!");
     },
     onError: (err) => {
@@ -57,22 +63,38 @@ export default function AccountProfileForm({ user }: { user: User }) {
     },
   });
 
-  function onSubmit() {
-    const dirtyKeys = Object.keys(
-      form.formState.dirtyFields,
-    ) as (keyof ManageAccountValues)[];
+  const resendEmailVerificationMutation =
+    trpc.user.resendEmailVerificationLink.useMutation({
+      onSuccess: (res) => {
+        if (res.status === true) {
+          toast.success("Verification email sent successfully!");
+        } else {
+          toast.error("Failed to resend verification email.");
+        }
+      },
+      onError: (err) => {
+        toast.error(err.message ?? "Failed to resend verification email.");
+      },
+    });
 
-    if (dirtyKeys.length === 0) {
-      toast.success("Profile updated successfully!");
+  function resendVerification() {
+    // Prefer server to infer the target from the session, but keep email fallback if API expects it
+    resendEmailVerificationMutation.mutate(user.email);
+  }
+
+  function onSubmit(values: ManageAccountValues) {
+    // Build a minimal payload with only dirty fields
+    const keys = Object.keys(dirtyFields) as (keyof ManageAccountValues)[];
+
+    if (keys.length === 0) {
+      toast.info("No changes to save");
       return;
     }
 
-    const dirtyValues: Partial<ManageAccountValues> = {};
-    for (const key of dirtyKeys) {
-      dirtyValues[key] = form.getValues(key);
-    }
+    const payload: Partial<ManageAccountValues> = {};
+    for (const k of keys) payload[k] = values[k];
 
-    updateUserMutation.mutate(dirtyValues);
+    updateUserMutation.mutate(payload);
   }
 
   return (
@@ -102,11 +124,26 @@ export default function AccountProfileForm({ user }: { user: User }) {
                 {user.emailVerified ? (
                   <Badge className="text-xs px-2 py-0.5">Verified</Badge>
                 ) : (
-                  <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                    Not Verified
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                      Not Verified
+                    </Badge>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="text-xs px-2"
+                      disabled={resendEmailVerificationMutation.isPending}
+                      onClick={resendVerification}
+                    >
+                      {resendEmailVerificationMutation.isPending
+                        ? "Sending..."
+                        : "Resend"}
+                    </Button>
+                  </div>
                 )}
               </div>
+
               <FormControl>
                 <Input placeholder="you@company.com" {...field} />
               </FormControl>
@@ -115,8 +152,13 @@ export default function AccountProfileForm({ user }: { user: User }) {
           )}
         />
 
-        <Button type="submit" disabled={updateUserMutation.isPending}>
-          {updateUserMutation.isPending ? "Saving..." : "Save changes"}
+        <Button
+          type="submit"
+          disabled={!isDirty || isSubmitting || updateUserMutation.isPending}
+        >
+          {updateUserMutation.isPending || isSubmitting
+            ? "Saving..."
+            : "Save changes"}
         </Button>
       </form>
     </Form>

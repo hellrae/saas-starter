@@ -35,6 +35,12 @@ export const userRouter = createTRPCRouter({
       };
     }),
 
+  resendEmailVerificationLink: authedProcedure
+    .input(userSchema.shape.email)
+    .mutation(async ({ input: email }) => {
+      return await auth.api.sendVerificationEmail({ body: { email } });
+    }),
+
   changePassword: authedProcedure
     .input(changePasswordFormSchema)
     .mutation(async ({ input: values }) => {
