@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { layoutMetadata, jsonLd } from "@/lib/utils/seo";
-import Provider from "@/components/provider";
+import Provider from "@/components/layout/provider";
 import { geistSans } from "@/lib/fonts";
 
 export const metadata: Metadata = layoutMetadata;
@@ -20,7 +20,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={jsonLd}
         />
       </head>
-      <body className={`${geistSans.className} antialiased`}>
+      <body className={`${geistSans.className} antialiased bg-background`}>
         <Provider>{children}</Provider>
       </body>
     </html>
