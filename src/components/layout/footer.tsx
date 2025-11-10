@@ -55,7 +55,11 @@ const Socials = () => (
   </div>
 );
 
-export default function Footer({ links, resources, legalLinks }: {
+export default function Footer({
+  links,
+  resources,
+  legalLinks,
+}: {
   links?: NavLink[];
   resources?: NavLink[];
   legalLinks?: NavLink[];

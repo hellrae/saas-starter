@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import type { z } from "zod";
 import { z as zod } from "zod";
 import Link from "next/link";
+import { toast } from "sonner";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import {
 } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
 import { userSchema } from "@/types/auth-type";
+import { trpc } from "@/lib/trpc/client";
 
 export default function NewsletterForm() {
   const newsletterSchema = zod.object({
@@ -32,11 +34,31 @@ export default function NewsletterForm() {
     mode: "onSubmit",
   });
 
-  const { handleSubmit, control, formState } = form;
+  const { handleSubmit, control, formState, reset } = form;
   const { isSubmitting } = formState;
 
+  const subscribeMutation = trpc.newsletter.subscribe.useMutation({
+    onSuccess: () => {
+      toast.success("Welcome aboard! 🎉", {
+        description: "You've successfully subscribed to our newsletter.",
+      });
+      reset();
+    },
+    onError: (error) => {
+      if (error.data?.code === "CONFLICT") {
+        toast.error("Already subscribed", {
+          description: "This email is already on our list.",
+        });
+      } else {
+        toast.error("Something went wrong", {
+          description: error.message || "Please try again later.",
+        });
+      }
+    },
+  });
+
   const onSubmit = async (values: NewsletterFormValues) => {
-    console.log(values);
+    subscribeMutation.mutate(values);
   };
 
   return (
@@ -71,6 +93,7 @@ export default function NewsletterForm() {
                       type="email"
                       placeholder="you@awesome.com"
                       aria-invalid={!!formState.errors.email}
+                      disabled={isSubmitting}
                     />
                   </FormControl>
                   <FormMessage />
