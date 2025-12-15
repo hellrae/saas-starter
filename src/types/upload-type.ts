@@ -3,20 +3,16 @@ import z from "zod";
 export const uploadConfigs = {
   avatar: {
     maxSizeMB: 1,
-    allowedTypes: ["image/jpeg", "image/png", "image/webp"],
+    allowedTypes: ["image/jpeg", "image/png"], // only jpeg + png
     maxFiles: 1,
-    folder: "avatars",
+    concurrency: 3,
+    folder: "temp-posts",
   },
-  //   more...
-  //   cover: {
-  //     maxSizeMB: 2,
-  //     allowedTypes: ["image/jpeg", "image/png", "image/webp"],
-  //     maxFiles: 1,
-  //     folder: "covers",
-  //   },
+  // add more types here...
 } as const;
 
-export type UploadType = keyof typeof uploadConfigs;
+export type UploadConfigKey = keyof typeof uploadConfigs;
+export type UploadConfig = (typeof uploadConfigs)[UploadConfigKey];
 
 export const preSignedUploadRequestSchema = z.object({
   type: z.string(),
@@ -30,7 +26,7 @@ export const preSignedUploadRequestSchema = z.object({
 });
 
 export type PreSignedUploadRequest = {
-  type: UploadType;
+  type: UploadConfigKey;
   file: {
     filename: string;
     mimeType: string;

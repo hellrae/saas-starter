@@ -3,7 +3,7 @@ import {
   type PreSignedUploadRequest,
   preSignedUploadRequestSchema,
   uploadConfigs,
-  type UploadType,
+  type UploadConfigKey,
 } from "@/types/upload-type";
 import {
   PutObjectCommand,
@@ -26,7 +26,8 @@ export const s3Client = new S3Client({
 function getPutObjectCommandParams({
   file,
   type,
-}: PreSignedUploadRequest): PutObjectCommandInput {
+  userId,
+}: PreSignedUploadRequest & { userId: string }): PutObjectCommandInput {
   const config = uploadConfigs[type];
 
   if (!config) {
@@ -37,11 +38,16 @@ function getPutObjectCommandParams({
     Bucket: BUCKET_NAME,
     ContentType: file.mimeType,
     Key: `${config.folder}/${generateFileName(file.mimeType)}`,
+    Metadata: { userId },
   };
 }
 
-export async function getPreSignedUrl({ file, type }: PreSignedUploadRequest) {
-  const params = getPutObjectCommandParams({ file, type });
+async function getPreSignedUrl({
+  file,
+  type,
+  userId,
+}: PreSignedUploadRequest & { userId: string }) {
+  const params = getPutObjectCommandParams({ file, type, userId });
   const command = new PutObjectCommand(params);
 
   const url = await getSignedUrl(s3Client, command, { expiresIn: 90 });
@@ -55,18 +61,22 @@ export async function getPreSignedUrl({ file, type }: PreSignedUploadRequest) {
 export const fileUploadRouter = createTRPCRouter({
   getPreSignedUrl: authedProcedure
     .input(preSignedUploadRequestSchema)
-    .mutation(async ({ input }) => {
-      const config = uploadConfigs[input.type as UploadType];
+    .mutation(async ({ input, ctx }) => {
+      const config = uploadConfigs[input.type as UploadConfigKey];
 
       if (input.files.length > config.maxFiles) {
         throw new Error(`Too many files. Max allowed is ${config.maxFiles}`);
       }
 
-      validateFiles(input.files, input.type as UploadType);
+      validateFiles(input.files, input.type as UploadConfigKey);
 
       return Promise.all(
         input.files.map((file) =>
-          getPreSignedUrl({ type: input.type as UploadType, file }),
+          getPreSignedUrl({
+            type: input.type as UploadConfigKey,
+            file,
+            userId: ctx.user.id,
+          }),
         ),
       );
     }),

@@ -16,6 +16,7 @@ import type { NavLink } from "@/types/navbar-types";
 import { useSession } from "@/lib/auth/client";
 import NavbarLogo from "./navbar--logo";
 import { appSeo } from "@/lib/utils/seo";
+import { resolveImageUrl } from "@/lib/file-upload/helpers";
 
 export default function NavbarCTAClient({
   links,
@@ -44,7 +45,7 @@ export default function NavbarCTAClient({
                 {session.data.user.image ? (
                   <div className="relative h-8 w-8 overflow-hidden rounded-full">
                     <img
-                      src={session.data.user.image}
+                      src={resolveImageUrl(session.data.user.image, "key")}
                       alt={session.data.user.name}
                       sizes="32px"
                     />

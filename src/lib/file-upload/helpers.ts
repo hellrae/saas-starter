@@ -2,7 +2,7 @@ import Chance from "chance";
 import {
   type InputFile,
   uploadConfigs,
-  type UploadType,
+  type UploadConfigKey,
 } from "@/types/upload-type";
 import { env } from "@/lib/utils/env";
 
@@ -17,7 +17,7 @@ export function generateFileName(mimeType: string): string {
   return `${randomWords}-${uniqueId}-${dateString}.${fileExtension}`;
 }
 
-export function validateFile(file: InputFile, type: UploadType): void {
+export function validateFile(file: InputFile, type: UploadConfigKey): void {
   const config = uploadConfigs[type];
 
   if (!config) throw new Error(`Invalid upload type: ${type}`);
@@ -37,7 +37,7 @@ export function validateFile(file: InputFile, type: UploadType): void {
   }
 }
 
-export function validateFiles(files: InputFile[], type: UploadType): void {
+export function validateFiles(files: InputFile[], type: UploadConfigKey): void {
   const config = uploadConfigs[type];
 
   if (files.length > config.maxFiles) {
@@ -47,6 +47,28 @@ export function validateFiles(files: InputFile[], type: UploadType): void {
   for (const file of files) validateFile(file, type);
 }
 
-export function resolveImageUrl(key: string): string {
-  return `${env.NEXT_PUBLIC_ASSETS_SERVING_URL}/${key}`;
+type ImageSourceType = "key" | "url" | "blob";
+
+export function resolveImageUrl(
+  src?: string | undefined,
+  type: ImageSourceType = "key",
+): string | undefined {
+  if (!src) return undefined;
+
+  switch (type) {
+    case "blob":
+      return src;
+
+    case "url":
+      return src;
+
+    case "key": {
+      const normalizedKey = src.startsWith("/") ? src.slice(1) : src;
+
+      return `${env.NEXT_PUBLIC_ASSETS_SERVING_URL}/${normalizedKey}`;
+    }
+
+    default:
+      return undefined;
+  }
 }
