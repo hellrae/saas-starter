@@ -3,14 +3,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import type * as z from "zod";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
+
+import { Field, FieldLabel, FieldError } from "@/components/ui/field";
+
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -35,13 +30,18 @@ function ResetPasswordForm() {
     },
   });
 
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = form;
+
   const resetPasswordMutation = trpc.auth.resetPassword.useMutation({
     onSuccess: () => {
       toast.success("Password successfully reset! You can now log in.");
-      form.reset();
+      reset();
     },
-
-    // TODO: fix error handling based on better-auth errors
     onError: (error) => {
       console.error(error);
       toast.error(
@@ -73,62 +73,60 @@ function ResetPasswordForm() {
 
         {/* Show form only if token exists */}
         {token && (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>New Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Enter new password"
-                        disabled={resetPasswordMutation.isPending}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* New password */}
+            <Field data-invalid={!!errors.password}>
+              <FieldLabel htmlFor="password">New Password</FieldLabel>
 
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Re-enter new password"
-                        disabled={resetPasswordMutation.isPending}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button
-                type="submit"
-                className="w-full"
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter new password"
                 disabled={resetPasswordMutation.isPending}
-              >
-                {resetPasswordMutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
-                    Resetting...
-                  </>
-                ) : (
-                  "Reset Password"
-                )}
-              </Button>
-            </form>
-          </Form>
+                aria-invalid={!!errors.password}
+                {...register("password")}
+              />
+
+              {errors.password && (
+                <FieldError>{errors.password.message}</FieldError>
+              )}
+            </Field>
+
+            {/* Confirm password */}
+            <Field data-invalid={!!errors.confirmPassword}>
+              <FieldLabel htmlFor="confirmPassword">
+                Confirm Password
+              </FieldLabel>
+
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Re-enter new password"
+                disabled={resetPasswordMutation.isPending}
+                aria-invalid={!!errors.confirmPassword}
+                {...register("confirmPassword")}
+              />
+
+              {errors.confirmPassword && (
+                <FieldError>{errors.confirmPassword.message}</FieldError>
+              )}
+            </Field>
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={resetPasswordMutation.isPending}
+            >
+              {resetPasswordMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                "Reset Password"
+              )}
+            </Button>
+          </form>
         )}
 
         {/* Back to login */}

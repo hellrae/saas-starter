@@ -18,13 +18,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError } from "@/components/ui/field";
+
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -37,10 +32,18 @@ type ForgotValues = z.infer<typeof forgotSchema>;
 
 export default function ForgotPasswordForm() {
   const [sentTo, setSentTo] = useState<string | null>(null);
+
   const form = useForm<ForgotValues>({
     resolver: zodResolver(forgotSchema),
     defaultValues: { email: "" },
   });
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = form;
 
   const mutation = trpc.auth.requestPasswordReset.useMutation({
     onSuccess: (_, variables) => {
@@ -52,7 +55,8 @@ export default function ForgotPasswordForm() {
           maxWidth: "400px",
         },
       });
-      form.reset();
+      reset();
+      setSentTo(variables);
     },
     onError: (error) => {
       console.error(error);
@@ -70,7 +74,7 @@ export default function ForgotPasswordForm() {
 
   function handleChangeEmail() {
     setSentTo(null);
-    form.reset();
+    reset();
   }
 
   return (
@@ -79,50 +83,43 @@ export default function ForgotPasswordForm() {
 
       <AuthContent>
         {!sentTo ? (
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <Label>Email</Label>
-                    <FormControl>
-                      <Input
-                        placeholder="name@example.com"
-                        disabled={mutation.isPending}
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <Field data-invalid={!!errors.email}>
+              <Label>Email</Label>
+
+              <Input
+                placeholder="name@example.com"
+                disabled={mutation.isPending}
+                aria-invalid={!!errors.email}
+                {...register("email")}
               />
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={mutation.isPending}
-              >
-                {mutation.isPending ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
-                  </>
-                ) : (
-                  "Send reset link"
-                )}
-              </Button>
+              {errors.email && <FieldError>{errors.email.message}</FieldError>}
+            </Field>
 
-              <AuthSeparator />
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending...
+                </>
+              ) : (
+                "Send reset link"
+              )}
+            </Button>
 
-              <div className="pt-4 text-center text-sm text-muted-foreground">
-                <span>Remembered it? </span>
-                <Link href="/login" className="underline-offset-4 underline">
-                  Sign in
-                </Link>
-              </div>
-            </form>
-          </Form>
+            <AuthSeparator />
+
+            <div className="pt-4 text-center text-sm text-muted-foreground">
+              <span>Remembered it? </span>
+              <Link href="/login" className="underline-offset-4 underline">
+                Sign in
+              </Link>
+            </div>
+          </form>
         ) : (
           <div className="space-y-4 text-center">
             <CheckEmailIllustration />
@@ -131,14 +128,14 @@ export default function ForgotPasswordForm() {
 
             <p className="text-sm text-muted-foreground">
               If an account exists for{" "}
-              <span className="font-medium">{sentTo}</span>, we've sent a
+              <span className="font-medium">{sentTo}</span>, we&apos;ve sent a
               password reset link. It may take a few minutes to arrive. Please
               check your inbox and spam folder.
             </p>
 
             <div className="flex flex-col gap-2">
               <Button
-                type="submit"
+                type="button"
                 className="w-full"
                 onClick={() => {
                   if (sentTo) mutation.mutate(sentTo);
@@ -153,7 +150,8 @@ export default function ForgotPasswordForm() {
                   "Resend email"
                 )}
               </Button>
-              <Button variant={"secondary"} onClick={handleChangeEmail}>
+
+              <Button variant="secondary" onClick={handleChangeEmail}>
                 Change email
               </Button>
             </div>

@@ -7,14 +7,7 @@ import * as z from "zod";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldLabel, FieldError } from "@/components/ui/field";
 
 import { toast } from "sonner";
 import type { User } from "better-auth";
@@ -29,7 +22,6 @@ const ManageAccountSchema = z.object({
 type ManageAccountValues = z.infer<typeof ManageAccountSchema>;
 
 export default function AccountProfileForm({ user }: { user: User }) {
-  // Stable initial values from the user object
   const initialValues = useMemo<ManageAccountValues>(
     () => ({
       name: user.name ?? "",
@@ -44,16 +36,14 @@ export default function AccountProfileForm({ user }: { user: User }) {
     mode: "onBlur",
   });
 
-  // If the user changes (hot reload/refetch), reset the form to new defaults
   useEffect(() => {
     form.reset(initialValues, { keepDirty: false, keepTouched: false });
   }, [initialValues, form]);
 
-  const { isDirty, isSubmitting, dirtyFields } = form.formState;
+  const { isDirty, isSubmitting, dirtyFields, errors } = form.formState;
 
   const updateUserMutation = trpc.user.updateUser.useMutation({
     onSuccess: () => {
-      // mark form clean by syncing current values as the new baseline
       form.reset(form.getValues(), { keepDirty: false, keepTouched: true });
       toast.success("Profile updated successfully!");
     },
@@ -78,12 +68,10 @@ export default function AccountProfileForm({ user }: { user: User }) {
     });
 
   function resendVerification() {
-    // Prefer server to infer the target from the session, but keep email fallback if API expects it
     resendEmailVerificationMutation.mutate(user.email);
   }
 
   function onSubmit(values: ManageAccountValues) {
-    // Build a minimal payload with only dirty fields
     const keys = Object.keys(dirtyFields) as (keyof ManageAccountValues)[];
 
     if (keys.length === 0) {
@@ -98,69 +86,67 @@ export default function AccountProfileForm({ user }: { user: User }) {
   }
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Your full name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      {/* Name field */}
+      <Field data-invalid={!!errors.name}>
+        <FieldLabel htmlFor="name">Name</FieldLabel>
+
+        <Input
+          id="name"
+          placeholder="Your full name"
+          aria-invalid={!!errors.name}
+          {...form.register("name")}
         />
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <div className="flex items-center justify-between">
-                <FormLabel>Email</FormLabel>
-                {user.emailVerified ? (
-                  <Badge className="text-xs px-2 py-0.5">Verified</Badge>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs px-2 py-0.5">
-                      Not Verified
-                    </Badge>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="ghost"
-                      className="text-xs px-2"
-                      disabled={resendEmailVerificationMutation.isPending}
-                      onClick={resendVerification}
-                    >
-                      {resendEmailVerificationMutation.isPending
-                        ? "Sending..."
-                        : "Resend"}
-                    </Button>
-                  </div>
-                )}
-              </div>
+        {errors.name && <FieldError>{errors.name.message}</FieldError>}
+      </Field>
 
-              <FormControl>
-                <Input placeholder="you@company.com" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+      {/* Email field */}
+      <Field data-invalid={!!errors.email}>
+        <div className="flex items-center justify-between">
+          <FieldLabel htmlFor="email">Email</FieldLabel>
+
+          {user.emailVerified ? (
+            <Badge className="text-xs px-2 py-0.5">Verified</Badge>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="text-xs px-2 py-0.5">
+                Not Verified
+              </Badge>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="text-xs px-2"
+                disabled={resendEmailVerificationMutation.isPending}
+                onClick={resendVerification}
+              >
+                {resendEmailVerificationMutation.isPending
+                  ? "Sending..."
+                  : "Resend"}
+              </Button>
+            </div>
           )}
+        </div>
+
+        <Input
+          id="email"
+          placeholder="you@company.com"
+          aria-invalid={!!errors.email}
+          {...form.register("email")}
         />
 
-        <Button
-          type="submit"
-          disabled={!isDirty || isSubmitting || updateUserMutation.isPending}
-        >
-          {updateUserMutation.isPending || isSubmitting
-            ? "Saving..."
-            : "Save changes"}
-        </Button>
-      </form>
-    </Form>
+        {errors.email && <FieldError>{errors.email.message}</FieldError>}
+      </Field>
+
+      <Button
+        type="submit"
+        disabled={!isDirty || isSubmitting || updateUserMutation.isPending}
+      >
+        {updateUserMutation.isPending || isSubmitting
+          ? "Saving..."
+          : "Save changes"}
+      </Button>
+    </form>
   );
 }

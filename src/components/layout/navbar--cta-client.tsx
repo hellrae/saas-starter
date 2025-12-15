@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -44,10 +43,9 @@ export default function NavbarCTAClient({
               <Avatar>
                 {session.data.user.image ? (
                   <div className="relative h-8 w-8 overflow-hidden rounded-full">
-                    <Image
+                    <img
                       src={session.data.user.image}
                       alt={session.data.user.name}
-                      fill
                       sizes="32px"
                     />
                   </div>

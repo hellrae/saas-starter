@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useState } from "react";
 
 import {
   AuthCard,
@@ -17,15 +18,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
+import { Field, FieldError } from "@/components/ui/field";
+
 import { trpc } from "@/lib/trpc/client";
-import { useState } from "react";
 import { signInFormSchema } from "@/types/auth-type";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
@@ -41,6 +36,12 @@ export default function LoginForm() {
     },
   });
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = form;
+
   const signInMutation = trpc.auth.signIn.useMutation({
     onMutate: () => {
       setIsSubmitting(true);
@@ -52,7 +53,6 @@ export default function LoginForm() {
       toast.success("Welcome back 👋");
       window.location.href = "/account";
     },
-    // TODO: fix error handling based on better-auth errors
     onError: (error) => {
       console.error(error);
       if (error.message.includes("invalid credentials")) {
@@ -72,79 +72,71 @@ export default function LoginForm() {
       <AuthHeader title="Sign in to your account" />
 
       <AuthContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <Label>Email</Label>
-                  <FormControl>
-                    <Input
-                      placeholder="name@example.com"
-                      {...field}
-                      disabled={isSubmitting}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Email */}
+          <Field data-invalid={!!errors.email}>
+            <Label>Email</Label>
+
+            <Input
+              placeholder="name@example.com"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.email}
+              {...register("email")}
             />
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <Label>Password</Label>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Your password"
-                      disabled={isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            {errors.email && <FieldError>{errors.email.message}</FieldError>}
+          </Field>
+
+          {/* Password */}
+          <Field data-invalid={!!errors.password}>
+            <Label>Password</Label>
+
+            <Input
+              type="password"
+              placeholder="Your password"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.password}
+              {...register("password")}
             />
 
-            <div className="flex items-center justify-between">
-              <div className="text-sm">
-                <Link
-                  href="/forgot-password"
-                  className="underline-offset-4 underline"
-                >
-                  Forgot password?
-                </Link>
-              </div>
+            {errors.password && (
+              <FieldError>{errors.password.message}</FieldError>
+            )}
+          </Field>
 
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing
-                    In...
-                  </>
-                ) : (
-                  "Sign In"
-                )}
-              </Button>
-            </div>
-
-            <AuthSeparator />
-
-            <SocialButtons onSocial={(p) => console.log("social", p)} />
-
-            <div className="pt-4 text-center text-sm text-muted-foreground">
-              <span>Don't have an account? </span>
-              <Link href="/register" className="underline-offset-4 underline">
-                Register
+          <div className="flex items-center justify-between">
+            <div className="text-sm">
+              <Link
+                href="/forgot-password"
+                className="underline-offset-4 underline"
+              >
+                Forgot password?
               </Link>
             </div>
-          </form>
-        </Form>
+
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing In...
+                </>
+              ) : (
+                "Sign In"
+              )}
+            </Button>
+          </div>
+
+          <AuthSeparator />
+
+          <SocialButtons onSocial={(p) => console.log("social", p)} />
+
+          <div className="pt-4 text-center text-sm text-muted-foreground">
+            <span>Don't have an account? </span>
+            <Link href="/register" className="underline-offset-4 underline">
+              Register
+            </Link>
+          </div>
+        </form>
       </AuthContent>
 
       <DefaultAuthFooter />

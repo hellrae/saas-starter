@@ -6,36 +6,31 @@ import type { z } from "zod";
 import { z as zod } from "zod";
 import Link from "next/link";
 import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "@/components/ui/form";
-import { Loader2 } from "lucide-react";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
+
 import { userSchema } from "@/types/auth-type";
 import { trpc } from "@/lib/trpc/client";
 
+const newsletterSchema = zod.object({
+  email: userSchema.shape.email,
+});
+
+type NewsletterFormValues = z.infer<typeof newsletterSchema>;
+
 export default function NewsletterForm() {
-  const newsletterSchema = zod.object({
-    email: userSchema.shape.email,
-  });
-  type NewsletterFormValues = z.infer<typeof newsletterSchema>;
+  const { register, handleSubmit, formState, reset } =
+    useForm<NewsletterFormValues>({
+      resolver: zodResolver(newsletterSchema),
+      defaultValues: { email: "" },
+      mode: "onSubmit",
+    });
 
-  const form = useForm<NewsletterFormValues>({
-    resolver: zodResolver(newsletterSchema),
-    defaultValues: { email: "" },
-    mode: "onSubmit",
-  });
-
-  const { handleSubmit, control, formState, reset } = form;
-  const { isSubmitting } = formState;
+  const { errors, isSubmitting } = formState;
 
   const subscribeMutation = trpc.newsletter.subscribe.useMutation({
     onSuccess: () => {
@@ -57,9 +52,11 @@ export default function NewsletterForm() {
     },
   });
 
-  const onSubmit = async (values: NewsletterFormValues) => {
+  const onSubmit = (values: NewsletterFormValues) => {
     subscribeMutation.mutate(values);
   };
+
+  const emailError = errors.email?.message;
 
   return (
     <Card className="mx-auto w-full">
@@ -70,54 +67,51 @@ export default function NewsletterForm() {
           </h3>
           <p className="mt-2 text-sm sm:text-base text-muted-foreground leading-relaxed max-w-2xl mx-auto sm:mx-0">
             Join thousands of makers getting early access to product updates,
-            design tips, and insights from the team. No spam — ever.
+            design tips, and insights from the team. No spam, ever.
           </p>
         </div>
 
-        <Form {...form}>
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            className="w-full flex flex-col sm:flex-row items-center gap-2 sm:gap-3 justify-center sm:justify-start"
-            aria-label="Subscribe to newsletter"
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="w-full flex flex-col sm:flex-row items-center gap-2 sm:gap-3 justify-center sm:justify-start"
+          aria-label="Subscribe to newsletter"
+        >
+          <Field
+            className="flex-1 min-w-0 max-w-sm"
+            data-invalid={!!emailError}
           >
-            <FormField
-              control={control}
-              name="email"
-              render={({ field }) => (
-                <FormItem className="flex-1 min-w-0 max-w-sm">
-                  <FormLabel className="sr-only">Email address</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      id="newsletter-email"
-                      type="email"
-                      placeholder="you@awesome.com"
-                      aria-invalid={!!formState.errors.email}
-                      disabled={isSubmitting}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            <FieldLabel htmlFor="newsletter-email" className="sr-only">
+              Email address
+            </FieldLabel>
+
+            <Input
+              id="newsletter-email"
+              type="email"
+              placeholder="you@awesome.com"
+              aria-invalid={!!emailError}
+              disabled={isSubmitting}
+              {...register("email")}
             />
 
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="whitespace-nowrap w-full sm:w-auto"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Joining...
-                </>
-              ) : (
-                "Join the list"
-              )}
-            </Button>
-          </form>
-        </Form>
+            {emailError && <FieldError>{emailError}</FieldError>}
+          </Field>
 
-        {/* Footer info */}
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="whitespace-nowrap w-full sm:w-auto"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Joining...
+              </>
+            ) : (
+              "Join the list"
+            )}
+          </Button>
+        </form>
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 text-xs text-muted-foreground">
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1 sm:gap-2">
             <span>We never share your data with anyone.</span>

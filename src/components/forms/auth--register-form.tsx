@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
+import { useState } from "react";
 
 import {
   AuthCard,
@@ -17,14 +18,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormMessage,
-} from "@/components/ui/form";
-import { useState } from "react";
+import { Field, FieldError } from "@/components/ui/field";
+
 import { signupFormSchema } from "@/types/auth-type";
 import { trpc } from "@/lib/trpc/client";
 import { toast } from "sonner";
@@ -41,6 +36,12 @@ export default function RegisterForm() {
     },
   });
 
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = form;
+
   const signUpMutation = trpc.auth.signUp.useMutation({
     onMutate: () => {
       setIsSubmitting(true);
@@ -52,7 +53,6 @@ export default function RegisterForm() {
       toast.success("Account created successfully!");
       window.location.href = "/account";
     },
-    // TODO: fix error handling based on better-auth errors
     onError: (error) => {
       console.log(error);
       toast.error(error.message || "Failed to sign up. Please try again.");
@@ -60,7 +60,6 @@ export default function RegisterForm() {
   });
 
   function onSubmit(values: z.infer<typeof signupFormSchema>) {
-    // Extra UX: check if terms are accepted
     signUpMutation.mutate(values);
   }
 
@@ -69,82 +68,70 @@ export default function RegisterForm() {
       <AuthHeader title="Create an account" />
 
       <AuthContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <Label>Name</Label>
-                  <FormControl>
-                    <Input
-                      placeholder="Your full name"
-                      {...field}
-                      disabled={isSubmitting}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Name */}
+          <Field data-invalid={!!errors.name}>
+            <Label>Name</Label>
+
+            <Input
+              placeholder="Your full name"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.name}
+              {...register("name")}
             />
 
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <Label>Email</Label>
-                  <FormControl>
-                    <Input
-                      placeholder="name@example.com"
-                      {...field}
-                      disabled={isSubmitting}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            {errors.name && <FieldError>{errors.name.message}</FieldError>}
+          </Field>
+
+          {/* Email */}
+          <Field data-invalid={!!errors.email}>
+            <Label>Email</Label>
+
+            <Input
+              placeholder="name@example.com"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.email}
+              {...register("email")}
             />
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <Label>Password</Label>
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Create a password"
-                      disabled={isSubmitting}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
+            {errors.email && <FieldError>{errors.email.message}</FieldError>}
+          </Field>
+
+          {/* Password */}
+          <Field data-invalid={!!errors.password}>
+            <Label>Password</Label>
+
+            <Input
+              type="password"
+              placeholder="Create a password"
+              disabled={isSubmitting}
+              aria-invalid={!!errors.password}
+              {...register("password")}
             />
 
-            <div className="flex items-center justify-between">
-              <div />
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? "Registering..." : "Register"}
-              </Button>
-            </div>
+            {errors.password && (
+              <FieldError>{errors.password.message}</FieldError>
+            )}
+          </Field>
 
-            <AuthSeparator />
+          <div className="flex items-center justify-between">
+            <div />
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Registering..." : "Register"}
+            </Button>
+          </div>
 
-            <SocialButtons onSocial={(p) => console.log("social", p)} />
+          <AuthSeparator />
 
-            <div className="pt-4 text-center text-sm text-muted-foreground">
-              <span>Already have an account? </span>
-              <Link href="/login" className="underline-offset-4 underline">
-                Login
-              </Link>
-            </div>
-          </form>
-        </Form>
+          <SocialButtons onSocial={(p) => console.log("social", p)} />
+
+          <div className="pt-4 text-center text-sm text-muted-foreground">
+            <span>Already have an account? </span>
+            <Link href="/login" className="underline-offset-4 underline">
+              Login
+            </Link>
+          </div>
+        </form>
       </AuthContent>
 
       <DefaultAuthFooter />
