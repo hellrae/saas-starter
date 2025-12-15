@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -8,11 +7,11 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldLabel, FieldError } from "@/components/ui/field";
+import { Badge } from "@/components/ui/badge";
 
 import { toast } from "sonner";
 import type { User } from "better-auth";
 import { trpc } from "@/lib/trpc/client";
-import { Badge } from "@/components/ui/badge";
 
 const ManageAccountSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -22,29 +21,24 @@ const ManageAccountSchema = z.object({
 type ManageAccountValues = z.infer<typeof ManageAccountSchema>;
 
 export default function AccountProfileForm({ user }: { user: User }) {
-  const initialValues = useMemo<ManageAccountValues>(
-    () => ({
-      name: user.name ?? "",
-      email: user.email ?? "",
-    }),
-    [user.name, user.email],
-  );
-
   const form = useForm<ManageAccountValues>({
     resolver: zodResolver(ManageAccountSchema),
-    defaultValues: initialValues,
+    defaultValues: {
+      name: user.name ?? "",
+      email: user.email ?? "",
+    },
     mode: "onBlur",
   });
-
-  useEffect(() => {
-    form.reset(initialValues, { keepDirty: false, keepTouched: false });
-  }, [initialValues, form]);
 
   const { isDirty, isSubmitting, dirtyFields, errors } = form.formState;
 
   const updateUserMutation = trpc.user.updateUser.useMutation({
     onSuccess: () => {
-      form.reset(form.getValues(), { keepDirty: false, keepTouched: true });
+      // reset dirty state after successful save
+      form.reset(form.getValues(), {
+        keepDirty: false,
+        keepTouched: true,
+      });
       toast.success("Profile updated successfully!");
     },
     onError: (err) => {
@@ -80,28 +74,28 @@ export default function AccountProfileForm({ user }: { user: User }) {
     }
 
     const payload: Partial<ManageAccountValues> = {};
-    for (const k of keys) payload[k] = values[k];
+    for (const key of keys) {
+      payload[key] = values[key];
+    }
 
     updateUserMutation.mutate(payload);
   }
 
   return (
     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      {/* Name field */}
+      {/* Name */}
       <Field data-invalid={!!errors.name}>
         <FieldLabel htmlFor="name">Name</FieldLabel>
-
         <Input
           id="name"
           placeholder="Your full name"
           aria-invalid={!!errors.name}
           {...form.register("name")}
         />
-
         {errors.name && <FieldError>{errors.name.message}</FieldError>}
       </Field>
 
-      {/* Email field */}
+      {/* Email */}
       <Field data-invalid={!!errors.email}>
         <div className="flex items-center justify-between">
           <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -139,10 +133,8 @@ export default function AccountProfileForm({ user }: { user: User }) {
         {errors.email && <FieldError>{errors.email.message}</FieldError>}
       </Field>
 
-      <Button
-        type="submit"
-        disabled={!isDirty || isSubmitting || updateUserMutation.isPending}
-      >
+      {/* Submit */}
+      <Button type="submit" disabled={!isDirty || isSubmitting}>
         {updateUserMutation.isPending || isSubmitting
           ? "Saving..."
           : "Save changes"}

@@ -4,8 +4,13 @@ export const userSchema = z.object({
   id: z.string().min(1, "User ID is required"),
   name: z
     .string()
+    .trim()
     .min(2, { message: "Name must be at least 2 characters." })
-    .regex(/^\p{L}+$/u, { message: "Name must contain only letters." }),
+    .max(100, { message: "Name is too long." })
+    .regex(/^[\p{L}\p{M}'’\-\s.]+$/u, {
+      message:
+        "Name may contain letters, spaces, hyphens, apostrophes and dots only.",
+    }),
 
   email: z.string().regex(/^[A-Za-z0-9._+\-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/, {
     message: "Please enter a valid email address.",
