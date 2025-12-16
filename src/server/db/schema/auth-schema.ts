@@ -7,7 +7,8 @@ export const user = createTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: boolean("email_verified").notNull(),
   image: text("image"),
-
+  
+  isDeleted: boolean("is_deleted").notNull().default(false),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 });
